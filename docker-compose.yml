@@ -1,0 +1,33 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: db
+      DB_NAME: ${MARIADB_DATABASE}
+      DB_USER: ${MARIADB_USER}
+      DB_PASS: ${MARIADB_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [arcade-net]
+
+  db:
+    image: mariadb:11.4          # versión concreta, NO latest
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/mysql   # volumen con nombre: los datos persisten
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 10
+    networks: [arcade-net]
+    # OJO: sin "ports:" -> el 3306 NO se publica en el host
+
+networks:
+  arcade-net:
+
+volumes:
+  db_data:
