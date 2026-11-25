@@ -80,3 +80,37 @@ wpcontent_20261125_190630.tar.gz  31510495 bytes (31M)
    - `wp post list --post_type=post --post_status=publish` vuelve a mostrar las entradas `12`, `11` (*Torneo mensual de juegos retro*) y `10`.
    - `wp plugin list` muestra de nuevo `flamingo` en estado `active` (`2.6.4`), `/var/www/html/wp-content` mantiene `www-data:www-data` (`33:33`) y `http://localhost:8080/` responde `HTTP/1.1 200 OK`.
 
+## 6. Importación y exportación (WXR, CSV, JSON y SQL)
+
+### Exportación WXR completa (`exportaciones/sitio_20261125.xml`)
+
+- Generada con `./wp export --stdout > exportaciones/sitio_20261125.xml` usando `-T` en `docker compose run --rm -T wpcli` para evitar retornos de carro en el XML (`57K`).
+- Elementos exportados antes de la importación de ASIR:
+  - `8` elementos `flamingo_contact`
+  - `6` `page`
+  - `4` `post`
+  - `4` `nav_menu_item`
+  - `1` `wp_navigation`
+  - `1` `wpcf7_contact_form`
+  - `1` autor, `3` categorías y `1` menú (`Menu Principal`).
+
+### Importación WXR y CSV desde `datos/`
+
+- Instalado y activado `wordpress-importer` (`0.9.7`) y montado `./datos:/datos:ro` en `wpcli`.
+- Importado `/datos/contenidos_asir.xml` con `--authors=create`: importados 8 elementos (`#101` a `#108`: 6 entradas en `Noticias`, `Eventos` y `Prácticas`, más 2 páginas: *Horario del ciclo* y *Normas del aula técnica*).
+- Importado `/datos/usuarios.csv` con `wp user import-csv`: actualizados `coord.web`, `profe.redes`, `profe.so`, `alumna.fct` y `familia.garcia`, y creados `profe.bd`, `alumno.fct` y `exalumno.2025`.
+
+### Exportaciones CSV, JSON, API REST y SQL
+
+- **CSV (`exportaciones/entradas.csv`, `1.1K`):** exportadas las 10 entradas mediante `wp post list --post_type=post --format=csv`.
+- **JSON (`exportaciones/usuarios.json`, `1.9K`):** exportados todos los usuarios mediante `wp user list --format=json`.
+- **API REST:**
+  - `GET /wp-json/wp/v2/posts`: devuelve en JSON las 9 entradas publicadas (arcade + ciclo ASIR).
+  - `GET /wp-json/wp/v2/users`: devuelve los autores con entradas publicadas (`coord-web`, `profe-redes`, `profe-so`).
+- **Volcado SQL (`exportaciones/wp_users.sql`):** generado con `mariadb-dump --single-transaction` sobre la tabla `wp_users`. En WordPress `6.7.2` los hashes almacenados comienzan por `$P$B...` (formato PHPass; el prefijo `$wp$2y$` aplica a partir de WordPress 6.8).
+
+### Entrada de síntesis en categoría `Prácticas`
+
+- Publicada la entrada `116` (*Comparativa de formatos: WXR, CSV, JSON y SQL*) dentro de la categoría `Prácticas` explicando la utilidad de cada formato en 5 líneas.
+
+

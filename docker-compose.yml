@@ -43,6 +43,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - wp_data:/var/www/html
+      - ./datos:/datos:ro
     environment:
       HOME: /tmp
       WORDPRESS_DB_HOST: db
