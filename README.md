@@ -69,3 +69,20 @@ salon-recreativo/
   - Usuario dedicado con rol Editor (`editor_arcade`), plugin `limit-login-attempts-reloaded` (`3.4.7`) activo y `.env` excluido de Git mediante `.gitignore`.
 - **Pruebas y rendimiento ([docs/pruebas.md](docs/pruebas.md)):**
   - Persistencia verificada tras `docker compose down` + `up -d`, respuestas HTTP `200` en ~`72–151 ms` tras calentamiento y consumo total inferior a `185 MiB` de RAM entre los tres contenedores.
+
+## 6. Copias de seguridad y restauración
+
+El proyecto incluye dos scripts ejecutables en `scripts/` (las copias generadas en `backups/` están excluidas de Git mediante `.gitignore`):
+
+- **Crear copia de seguridad:**
+  ```bash
+  ./scripts/backup.sh
+  ```
+  Genera `backups/db_YYYYMMDD_HHMMSS.sql.gz` (mediante `mariadb-dump` en `db`) y `backups/wpcontent_YYYYMMDD_HHMMSS.tar.gz` (desde el volumen `wp_data`), comprueba ambos con `gzip -t` y conserva solo las 7 últimas copias de cada tipo.
+- **Restaurar una copia existente:**
+  ```bash
+  ./scripts/restore.sh YYYYMMDD_HHMMSS
+  # o indicando ambos ficheros explícitamente:
+  ./scripts/restore.sh backups/db_YYYYMMDD_HHMMSS.sql.gz backups/wpcontent_YYYYMMDD_HHMMSS.tar.gz
+  ```
+  Verifica integridad con `gzip -t`, restaura la base de datos en `db` y extrae `wp-content` en `wp_data` con propietario `33:33` (`www-data`). Más detalles del simulacro en [INFORME_RA3.md](INFORME_RA3.md).
