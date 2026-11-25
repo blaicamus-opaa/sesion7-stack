@@ -113,4 +113,60 @@ wpcontent_20261125_190630.tar.gz  31510495 bytes (31M)
 
 - Publicada la entrada `116` (*Comparativa de formatos: WXR, CSV, JSON y SQL*) dentro de la categoría `Prácticas` explicando la utilidad de cada formato en 5 líneas.
 
+## 7. Tema hijo `iaw-hijo`, `theme.json` y plantillas del Editor del Sitio
+
+- **Creación y activación:** generado con `wp scaffold child-theme iaw-hijo --parent_theme=twentytwentyfive --theme_name="IAW Hijo" --activate` (`iaw-hijo` `0.1.0` activo, padre `twentytwentyfive` `1.0`).
+- **Paleta y estilos (`temas/iaw-hijo/theme.json`, esquema versión 3):**
+  - Fondo (`background`): `#F4F7FA`
+  - Texto (`text`): `#21295C`
+  - Enlaces (`link`): `#065A82` y `:hover`: `#1C7293`
+  - Encabezados (`heading`): `#21295C`
+  - Copiado en `/var/www/html/wp-content/themes/iaw-hijo/theme.json` con propietario `www-data:www-data` (`33:33`).
+- **Dónde se guardan las plantillas editadas en el Editor del Sitio (Site Editor / FSE):**
+  - Las plantillas base del tema residen como archivos HTML en `templates/` y `parts/` dentro de la carpeta del tema, junto a `theme.json`.
+  - Cuando un administrador modifica una plantilla, parte de plantilla o estilos globales desde el **Editor del Sitio** en WordPress, las personalizaciones **no sobrescriben los archivos del tema**, sino que se guardan en la base de datos MariaDB dentro de la tabla `wp_posts` con los tipos de entrada personalizados (`post_type`):
+    - `wp_template` (plantillas completas modificadas)
+    - `wp_template_part` (cabeceras, pies de página y partes de plantilla)
+    - `wp_global_styles` (personalizaciones de estilos globales/`theme.json`)
+  - Cada registro queda vinculado al tema activo (`iaw-hijo`) mediante la taxonomía `wp_theme` en `wp_terms` / `wp_term_relationships`.
+
+## 8. Sindicación RSS 2.0 vs Atom 1.0 y página «Noticias del sector»
+
+- **Configuración aplicada:** `posts_per_rss = 5` y `rss_use_excerpt = 1` mediante WP-CLI.
+- **Validación:** guardado `/feed/` en `feed.xml` y validado como XML bien formado (`root=rss`, `version=2.0`, `5` elementos `<item>`).
+- **Página publicada:** `Noticias del sector` (ID `117`, `/noticias-del-sector/`, HTTP `200 OK`) con un bloque Gutenberg `wp:rss` apuntando a `https://wordpress.org/news/feed/` (`itemsToShow: 5`, `displayDate: true`, `displayExcerpt: true`).
+
+### Comparativa real RSS 2.0 (`/feed/`) vs Atom 1.0 (`/feed/atom/`)
+
+| Aspecto | RSS 2.0 (`http://localhost:8080/feed/`) | Atom 1.0 (`http://localhost:8080/feed/atom/`) |
+|---|---|---|
+| `Content-Type` HTTP | `application/rss+xml; charset=UTF-8` | `application/atom+xml; charset=UTF-8` |
+| Elemento raíz y contenedor | `<rss version="2.0"><channel>...</channel></rss>` | `<feed xmlns="http://www.w3.org/2005/Atom">...</feed>` |
+| Descripción del sitio | `<description>Cultura arcade clásica...</description>` | `<subtitle type="text">Cultura arcade clásica...</subtitle>` |
+| Elemento por entrada | `<item>` con `<guid>` y `<description>` | `<entry>` con `<id>` y `<link rel="alternate" ... />` |
+| Formato de fecha (RFC) | **RFC 822 / 2822:** `<pubDate>Wed, 25 Nov 2026 18:16:44 +0000</pubDate>` | **RFC 3339 (ISO 8601):** `<published>2026-11-25T18:16:44Z</published>` |
+| Fecha de actualización global | `<lastBuildDate>Wed, 25 Nov 2026 18:16:44 +0000</lastBuildDate>` | `<updated>2026-11-25T18:16:44Z</updated>` |
+
+Fragmento real de `feed.xml` (RSS 2.0):
+```xml
+<item>
+  <title>Comparativa de formatos: WXR, CSV, JSON y SQL</title>
+  <link>http://localhost:8080/comparativa-de-formatos-wxr-csv-json-y-sql/</link>
+  <pubDate>Wed, 25 Nov 2026 18:16:44 +0000</pubDate>
+  <guid isPermaLink="false">http://localhost:8080/comparativa-de-formatos-wxr-csv-json-y-sql/</guid>
+</item>
+```
+
+Fragmento real de `/feed/atom/` (Atom 1.0):
+```xml
+<entry>
+  <title type="html"><![CDATA[Comparativa de formatos: WXR, CSV, JSON y SQL]]></title>
+  <link rel="alternate" type="text/html" href="http://localhost:8080/comparativa-de-formatos-wxr-csv-json-y-sql/" />
+  <id>http://localhost:8080/comparativa-de-formatos-wxr-csv-json-y-sql/</id>
+  <updated>2026-11-25T18:16:44Z</updated>
+  <published>2026-11-25T18:16:44Z</published>
+</entry>
+```
+
+
 

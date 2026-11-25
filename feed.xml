@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>Salón Recreativo Retro</title>
+	<atom:link href="http://localhost:8080/feed/" rel="self" type="application/rss+xml" />
+	<link>http://localhost:8080</link>
+	<description>Cultura arcade clásica, torneos y restauración de cabinas</description>
+	<lastBuildDate>Wed, 25 Nov 2026 18:16:44 +0000</lastBuildDate>
+	<language>es</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.7.2</generator>
+	<item>
+		<title>Comparativa de formatos: WXR, CSV, JSON y SQL</title>
+		<link>http://localhost:8080/comparativa-de-formatos-wxr-csv-json-y-sql/</link>
+					<comments>http://localhost:8080/comparativa-de-formatos-wxr-csv-json-y-sql/#respond</comments>
+		
+		<dc:creator><![CDATA[a]]></dc:creator>
+		<pubDate>Wed, 25 Nov 2026 18:16:44 +0000</pubDate>
+				<category><![CDATA[Prácticas]]></category>
+		<guid isPermaLink="false">http://localhost:8080/comparativa-de-formatos-wxr-csv-json-y-sql/</guid>
+
+					<description><![CDATA[Resumen práctico de los cuatro formatos utilizados en la exportación e importación de WordPress: WXR (XML): formato nativo de WordPress para migrar entradas, páginas, autores, taxonomías y menús entre sitios. CSV: formato tabular ligero ideal para importar o revisar listados de usuarios y entradas en hojas de cálculo. JSON: estructura de datos estándar para integraciones [&#8230;]]]></description>
+		
+					<wfw:commentRss>http://localhost:8080/comparativa-de-formatos-wxr-csv-json-y-sql/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Cómo configurar controles arcade paso a paso</title>
+		<link>http://localhost:8080/como-configurar-controles-arcade-paso-a-paso/</link>
+					<comments>http://localhost:8080/como-configurar-controles-arcade-paso-a-paso/#respond</comments>
+		
+		<dc:creator><![CDATA[]]></dc:creator>
+		<pubDate>Wed, 25 Nov 2026 16:10:52 +0000</pubDate>
+				<category><![CDATA[Tutoriales]]></category>
+		<guid isPermaLink="false">http://localhost:8080/?p=12</guid>
+
+					<description><![CDATA[Configurar correctamente un joystick y los botones de acción marca la diferencia entre ejecutar un combo limpio o fallar en el momento decisivo. En esta guía resumimos los pasos esenciales para montar y calibrar tu propio panel de control arcade. 1. Cableado de masa común (GND) Conecta el terminal negativo en cadena (daisy chain) desde [&#8230;]]]></description>
+		
+					<wfw:commentRss>http://localhost:8080/como-configurar-controles-arcade-paso-a-paso/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Torneo mensual de juegos retro</title>
+		<link>http://localhost:8080/torneo-mensual-de-juegos-retro/</link>
+					<comments>http://localhost:8080/torneo-mensual-de-juegos-retro/#respond</comments>
+		
+		<dc:creator><![CDATA[]]></dc:creator>
+		<pubDate>Wed, 25 Nov 2026 16:10:52 +0000</pubDate>
+				<category><![CDATA[Novedades]]></category>
+		<guid isPermaLink="false">http://localhost:8080/?p=11</guid>
+
+					<description><![CDATA[Ya están abiertas las inscripciones para nuestro campeonato mensual, que se celebrará el próximo viernes a las 19:00 en formato de eliminación directa al mejor de tres rondas. En esta edición el título principal será Street Fighter II: Hyper Fighting en cabina japonesa con controles Sanwa recién calibrados. La inscripción es gratuita con la entrada [&#8230;]]]></description>
+		
+					<wfw:commentRss>http://localhost:8080/torneo-mensual-de-juegos-retro/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Inauguración de nuevas máquinas arcade</title>
+		<link>http://localhost:8080/inauguracion-de-nuevas-maquinas-arcade/</link>
+					<comments>http://localhost:8080/inauguracion-de-nuevas-maquinas-arcade/#respond</comments>
+		
+		<dc:creator><![CDATA[]]></dc:creator>
+		<pubDate>Wed, 25 Nov 2026 16:10:52 +0000</pubDate>
+				<category><![CDATA[Novedades]]></category>
+		<guid isPermaLink="false">http://localhost:8080/?p=10</guid>
+
+					<description><![CDATA[Este mes ampliamos la sala principal con tres cabinas clásicas totalmente restauradas en nuestro taller: OutRun con mueble vertical, Metal Slug X en formato Neo Geo MVS de cuatro ranuras y una unidad original de Galaga de 1981. El trabajo de puesta a punto ha incluido el recapado completo de los chasis CRT, la sustitución [&#8230;]]]></description>
+		
+					<wfw:commentRss>http://localhost:8080/inauguracion-de-nuevas-maquinas-arcade/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Hackathon de ciberseguridad</title>
+		<link>http://localhost:8080/hackathon-ciberseguridad/</link>
+					<comments>http://localhost:8080/hackathon-ciberseguridad/#respond</comments>
+		
+		<dc:creator><![CDATA[Profe de Redes]]></dc:creator>
+		<pubDate>Tue, 03 Nov 2026 15:00:00 +0000</pubDate>
+				<category><![CDATA[Eventos]]></category>
+		<category><![CDATA[Redes]]></category>
+		<guid isPermaLink="false">http://ciclo-asir.ejemplo/?p=106</guid>
+
+					<description><![CDATA[Abrimos inscripciones para el hackathon de ciberseguridad entre centros de la Comunitat Valenciana. Equipos de tres personas, con retos de redes, sistemas y aplicaciones web.]]></description>
+		
+					<wfw:commentRss>http://localhost:8080/hackathon-ciberseguridad/feed/</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+	</channel>
+</rss>
