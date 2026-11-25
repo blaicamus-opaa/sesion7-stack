@@ -168,5 +168,55 @@ Fragmento real de `/feed/atom/` (Atom 1.0):
 </entry>
 ```
 
+## 9. Actualizaciones controladas por capas (Práctica 5)
+
+### Tabla comparativa de versiones (Antes / Después)
+
+| Componente | Versión antes | Versión después | Notas |
+|---|---|---|---|
+| Imagen `wordpress` | `wordpress:6.7-php8.3-fpm` | `wordpress:6.7-php8.4-fpm` | `wordpress:7.1-php8.4-fpm` no existe en Docker Hub; `6.7-php8.4-fpm` actualiza PHP manteniendo la serie 6.7 |
+| Imagen `wpcli` | `wordpress:cli-php8.3` | `wordpress:cli-php8.4` | Actualizada en `docker-compose.yml` |
+| Imagen `nginx` | `nginx:stable` | `nginx:stable` | Sin cambios |
+| Imagen `db` | `mariadb:11` | `mariadb:11` | Sin cambios |
+| PHP | `8.3.20` | `8.4.6` | Actualizado al recrear los contenedores con la imagen PHP 8.4 |
+| Núcleo WordPress | `6.7.2` | `6.7.12` | Actualizado mediante `wp core update --minor` + `wp core update-db` + `wp core verify-checksums` |
+| `contact-form-7` | `6.0.6` (forzada `6.0.5` en prueba) | `6.0.6` | La `6.2.6` exige WordPress `7.1`, por lo que `plugin update --all` bloqueó el salto incompatible |
+| `cookie-law-info` | `3.5.9` | `3.5.9` | Última versión disponible |
+| `flamingo` | `2.6.4` | `2.6.4` | Última versión disponible |
+| `limit-login-attempts-reloaded` | `3.4.7` | `3.4.7` | Última versión disponible |
+| `simple-history` | `5.36.0` | `5.36.0` | Última versión disponible |
+| `wordpress-importer` | `0.9.7` | `0.9.7` | Última versión disponible |
+| Tema activo `iaw-hijo` / padre `twentytwentyfive` | `0.1.0` / `1.0` | `0.1.0` / `1.0` | Sin cambios en temas |
+
+### Pruebas ejecutadas en las 3 capas
+
+- **Copia previa y rama:** ejecutado `./scripts/backup.sh` (`db_20261125_193448.sql.gz` y `wpcontent_20261125_193448.tar.gz`) y creada la rama `ra3-actualizacion`.
+- **Capa 1 (Plugins):** forzada la versión `6.0.5` de `contact-form-7`; tanto `wp plugin update --all --dry-run` como `wp plugin update --all` emitieron `Warning: contact-form-7: This update requires WordPress version 7.1, but the version installed is 6.7.2.`, demostrando la protección automática frente a actualizaciones incompatibles con el núcleo; se restableció a `6.0.6`.
+- **Capa 2 (PHP 8.3 → 8.4):** al cambiar `docker-compose.yml` a `wordpress:6.7-php8.4-fpm` y `wordpress:cli-php8.4` (`pull` + `up -d`), `php -v` pasó a **`8.4.6`**, mientras que `wp core version` siguió marcando **`6.7.2`**.
+- **Capa 3 (Núcleo WordPress):** `wp core check-update` detectó `6.7.12` (`minor`) y `7.1.5` (`major`); `wp core update --minor` actualizó a **`6.7.12`**, `wp core update-db` confirmó la versión de esquema `58975`, y `wp core verify-checksums` verificó la integridad de los archivos (`Success: WordPress installation verifies against checksums.`). La rama `ra3-actualizacion` se fusionó por *fast-forward* en `ra3-admin`.
+
+### ¿Por qué sube PHP a 8.4 pero el volumen conserva la versión de WordPress?
+
+El binario e intérprete **PHP** viven en la capa inmutable de la imagen del contenedor (`wordpress:6.7-php8.4-fpm`), por lo que al hacer `pull` y `up -d` se reemplaza inmediatamente por PHP `8.4.6`. En cambio, los archivos del **núcleo de WordPress** (`/var/www/html`) residen en el volumen persistente `wp_data`. El script `docker-entrypoint.sh` de la imagen oficial de WordPress solo copia los archivos de WordPress desde `/usr/src/wordpress` cuando el directorio `/var/www/html` está vacío; como `wp_data` ya contiene una instalación existente (`6.7.2`) con su `wp-config.php` y `wp-content`, el entrypoint respeta el volumen y **no sobrescribe** WordPress. Por eso el núcleo debe actualizarse explícitamente mediante WP-CLI (`wp core update`) o el panel web.
+
+## 10. Análisis de tráfico, GoAccess y comparativa Nginx vs Simple History
+
+### Tráfico generado y resumen de `scripts/informe-accesos.sh`
+
+- Generadas peticiones `GET /?p=1..30`, `GET /no-existe` (`404`) y 3 intentos de login fallidos (`POST /wp-login.php`).
+- Resumen real de `logs/access.log` (`319` líneas): `277` respuestas `200`, `25` `304`, `6` `404`, `6` `302`, `4` `301` y `1` `403`.
+- Generado el informe HTML interactivo con `allinurl/goaccess` en `informes/informe_accesos_20261125_193947.html` (`1,9M`, excluido de Git mediante `**/informes/`).
+
+### Comparativa: logs de Nginx (`logs/access.log`) vs Simple History (`wp_simple_history`)
+
+| Criterio | Logs de Nginx (`logs/access.log`) | Simple History (`wp_simple_history`) |
+|---|---|---|
+| **Capa registrada** | Capa HTTP / servidor web (todas las peticiones que llegan a Nginx) | Capa de aplicación WordPress (acciones internas sobre usuarios, contenidos, plugins y traducciones) |
+| **Ejemplo real con 404 (`/no-existe` y `/?p=1..5`)** | Registra cada petición con IP, fecha, método, URI, código `404`, bytes y User-Agent (`curl/8.22.0`) | No registra errores `404` ni peticiones a URLs inexistentes |
+| **Ejemplo real con 3 logins fallidos (`POST /wp-login.php`)** | Solo ve `POST /wp-login.php HTTP/1.1" 200 12827`; no distingue si el login fue correcto o qué usuario se probó | Registra 3 eventos `warning` (`SimpleUserLogger`, `web_user`): `Failed to login with username "{failed_username}" (username does not exist)` (`admin_falso`) |
+| **Cambios administrativos (actualizaciones/WP-CLI)** | No ve operaciones internas de `wpcli` | Registra `SH_Translations_Logger` (`wp_cli`) al actualizar traducciones de plugins y temas |
+| **Almacenamiento** | Archivos planos en el host (`logs/access.log` y `error.log`) | Tablas en MariaDB (`wp_simple_history` / `wp_simple_history_contexts`) |
+
+
 
 
