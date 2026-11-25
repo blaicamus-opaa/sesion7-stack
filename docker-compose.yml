@@ -16,7 +16,13 @@ services:
       WORDPRESS_DB_NAME: ${WP_DB_NAME}
       WORDPRESS_DB_USER: ${WP_DB_USER}
       WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD}
-      WORDPRESS_CONFIG_EXTRA: "define('DISALLOW_FILE_EDIT', true);"
+      WORDPRESS_CONFIG_EXTRA: |
+        define('DISALLOW_FILE_EDIT', true);
+        $$proto = (!empty($$_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') || (!empty($$_SERVER['HTTPS']) && $$_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $$host = !empty($$_SERVER['HTTP_X_FORWARDED_HOST']) ? $$_SERVER['HTTP_X_FORWARDED_HOST'] : ($$_SERVER['HTTP_HOST'] ?? 'localhost:8080');
+        if (strpos($$host, ',') !== false) { $$host = trim(explode(',', $$host)[0]); }
+        define('WP_HOME', $$proto . '://' . $$host);
+        define('WP_SITEURL', $$proto . '://' . $$host);
     volumes:
       - wp_data:/var/www/html
       - ./config/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro

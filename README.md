@@ -1,230 +1,71 @@
-# 🕹️ Salón recreativo — Práctica final RA1
+# Salón Recreativo Retro — WordPress con Nginx, PHP-FPM y MariaDB (RA2)
 
-IAW 0376 · ASIR 2º · (Blai Camús)
+Portal web del **Salón Recreativo Retro** desplegado con Docker Compose mediante una arquitectura desacoplada en tres servicios: servidor web y proxy FastCGI (`nginx:stable`), intérprete WordPress con PHP-FPM (`wordpress:6.7-php8.3-fpm`) y base de datos relacional (`mariadb:11`).
 
-## 1. Descripción del stack
+## 1. Stack y arquitectura
 
-| Componente | Tecnología | Dónde corre |
-|---|---|---|
-| Servidor web | Apache 2 (imagen php:8.3-apache) | Servidor (contenedor web) |
-| Intérprete | PHP 8.3 + mysqli | Servidor |
-| SGBD | MariaDB 11.4 | Servidor (contenedor db) |
-| Cliente | Navegador + JavaScript | Cliente |
+| Servicio | Imagen | Función | Puerto / Red |
+|---|---|---|---|
+| `nginx` | `nginx:stable` | Servidor web de ficheros estáticos y proxy FastCGI hacia `wordpress:9000` | Publica `8080:80` |
+| `wordpress` | `wordpress:6.7-php8.3-fpm` | Motor CMS WordPress y ejecución de PHP 8.3 | Puerto interno `9000` |
+| `db` | `mariadb:11` | Base de datos MariaDB (`wp_db` y usuario `wp_user`) | Puerto interno `3306` (no publicado en host) |
 
-## 2. Arquitectura
+- **Volúmenes persistentes:**
+  - `wp_data`: compartido entre `nginx` y `wordpress` en `/var/www/html` (código de WordPress, temas, plugins y `uploads`).
+  - `db_data`: montado en `/var/lib/mysql` de `db` para persistir tablas, usuarios y contenidos.
 
-```mermaid
-graph LR
-    N[Navegador] -->|8080| W[Apache + PHP]
-    W -->|red Docker arcade-net| B[(MariaDB)]
-    B --- V[(volumen db_data)]
+## 2. Estructura de archivos
+
+```text
+salon-recreativo/
+├── .env.example              # Plantilla de variables de entorno (sin contraseñas)
+├── .gitignore                # Excluye .env del control de versiones
+├── docker-compose.yml        # Definición de servicios nginx, wordpress y db
+├── config/
+│   └── uploads.ini           # Límites PHP (upload_max_filesize=64M, post_max_size=64M, memory_limit=256M)
+├── nginx/
+│   └── default.conf          # Virtual host HTTP, FastCGI y reglas de endurecimiento
+├── docs/
+│   ├── personalizacion.md    # Tema, plugins, ajustes y estructura de contenidos
+│   ├── seguridad.md          # Pruebas antes/después y medidas de seguridad aplicadas
+│   └── pruebas.md            # Verificación de persistencia, latencia y recursos
+└── README.md                 # Documentación del proyecto
 ```
 
-## 3. Despliegue
+## 3. Despliegue desde cero
 
-### Local
-```bash
-git clone (URL_DE_MI_REPO) && cd salon-recreativo
-cp .env.example .env    # y editar las dos contraseñas (distintas)
-docker compose up -d --build
-docker compose ps       # db debe estar "healthy"
-```
-Abrir http://localhost:8080
+1. Clonar el repositorio y situarse en la carpeta del proyecto (`ra2-cms`):
+   ```bash
+   git clone <URL_DEL_REPOSITORIO>
+   cd sesion7-stack/salon-recreativo
+   ```
+2. Crear el archivo `.env` a partir de `.env.example` y rellenar las credenciales de MariaDB y WordPress (`MARIADB_*` y `WP_DB_*`):
+   ```bash
+   cp .env.example .env
+   ```
+3. Levantar el stack completo en segundo plano:
+   ```bash
+   docker compose up -d
+   docker compose ps
+   ```
+4. En MariaDB, asegurarse de que existen la base de datos `${WP_DB_NAME}` (`wp_db`) y el usuario `${WP_DB_USER}` (`wp_user`) con privilegios sobre ella.
 
-### Play with Docker
-```bash
-git clone (URL_DE_MI_REPO) && cd salon-recreativo
-cp .env.example .env && vi .env
-docker compose up -d --build
-```
-Abrir el puerto 8080 con el botón "OPEN PORT".
+## 4. Acceso al sitio
 
-## 4. Nivel 1 — Base de datos
+- **Local:** [http://localhost:8080](http://localhost:8080)
+- **Proxy inverso / GitHub Codespaces:** `WORDPRESS_CONFIG_EXTRA` en `docker-compose.yml` detecta automáticamente `HTTP_X_FORWARDED_HOST` / `HTTP_HOST` y `HTTP_X_FORWARDED_PROTO` para construir `WP_HOME` y `WP_SITEURL` en `http` o `https` sin romper enlaces ni estilos.
 
-**¿Por qué no pasamos la contraseña de root al servicio web?**
-(...)
+## 5. Resumen de personalización y seguridad
 
-**Resultado de `SHOW GRANTS;`**
-```
-+--------------------------------------------------------------------------------------------------------+
-| Grants for jugador@%                                                                                   |
-+--------------------------------------------------------------------------------------------------------+
-| GRANT USAGE ON *.* TO `jugador`@`%` IDENTIFIED BY PASSWORD '<hash>'                                    |
-| GRANT ALL PRIVILEGES ON `arcade`.* TO `jugador`@`%`                                                    |
-+--------------------------------------------------------------------------------------------------------+
-```
-- ¿Sobre qué base de datos tiene permisos jugador? Sobre `arcade` (aparece como `arcade`.*). No tiene permisos sobre ninguna otra base de datos.
-- ¿Por qué no usamos root desde la aplicación? Porque root tiene control total del servidor de base de datos. Si la web se compromete, con jugador solo se podría tocar arcade, pero con root se podría tocar todo.
-
-**Persistencia (`down` vs `down -v`)**
-(...)
-
-🪙 **Moneda 1:** `ARC-7X3K`
-
-## 5. Nivel 2 — PHP
-
-**¿Qué se ejecuta en el servidor y qué en el cliente?**
-En el servidor se ejecuta PHP, dentro del contenedor web (Apache + PHP). PHP se conecta a MariaDB con mysqli, consulta la tabla ranking, genera el HTML de la página y calcula la hora del servidor. Todo esto ocurre antes de que la página llegue al navegador, que solo recibe el resultado ya generado, sin ver el código PHP.
-En el cliente, es decir, en mi navegador, se ejecuta JavaScript, que calcula y muestra la hora del navegador usando el reloj y la zona horaria de mi equipo.
-
-**¿Por qué las dos horas pueden no coincidir?**
-Porque proceden de relojes distintos y se calculan en momentos distintos:
-- La hora de PHP es la del servidor (el contenedor), que normalmente usa la zona horaria UTC, mientras que la de JavaScript usa la zona horaria de mi ordenador.
-- La hora de PHP se calcula una sola vez, cuando el servidor genera la página, y queda fija. La de JavaScript se calcula en el navegador.
-- Los relojes del servidor y del cliente pueden estar desajustados entre sí.
-
-🪙 **Moneda 2:** `ARC-Q9M2`
-
-## 6. Nivel 3 — Seguridad
-
-### Sin credenciales en el repositorio
-```
-(salida de git ls-files y de git log -p | grep -F "contraseña")
-```
-
-### Puerto 3306 no publicado
-```
-(salida de docker compose ps)
-```
-
-### La aplicación usa jugador, no root
-(...)
-
-### Apache y PHP no revelan versión
-```
-# 🕹️ Salón recreativo — Práctica final RA1
-
-IAW 0376 · ASIR 2º · (tu nombre)
-
-## 1. Descripción del stack
-
-| Componente | Tecnología | Dónde corre |
-|---|---|---|
-| Servidor web | Apache 2 (imagen php:8.3-apache) | Servidor (contenedor web) |
-| Intérprete | PHP 8.3 + mysqli | Servidor |
-| SGBD | MariaDB 11.4 | Servidor (contenedor db) |
-| Cliente | Navegador + JavaScript | Cliente |
-
-## 2. Arquitectura
-
-```mermaid
-graph LR
-    N[Navegador] -->|8080| W[Apache + PHP]
-    W -->|red Docker arcade-net| B[(MariaDB)]
-    B --- V[(volumen db_data)]
-```
-
-## 3. Despliegue
-
-### Local
-```bash
-git clone (URL_DE_MI_REPO) && cd salon-recreativo
-cp .env.example .env    # y editar las dos contraseñas (distintas)
-docker compose up -d --build
-docker compose ps       # db debe estar "healthy"
-```
-Abrir http://localhost:8080
-
-### Play with Docker
-```bash
-git clone (URL_DE_MI_REPO) && cd salon-recreativo
-cp .env.example .env && vi .env
-docker compose up -d --build
-```
-Abrir el puerto 8080 con el botón "OPEN PORT".
-
-## 4. Nivel 1 — Base de datos
-
-**¿Por qué no pasamos la contraseña de root al servicio web?**
-(...)
-
-**Resultado de `SHOW GRANTS;`**
-```
-(pegar salida)
-```
-- ¿Sobre qué base de datos tiene permisos jugador? (...)
-- ¿Por qué no usamos root desde la aplicación? (...)
-
-**Persistencia (`down` vs `down -v`)**
-**Prueba A: `docker compose down` y `docker compose up -d`**
-Al ejecutar `docker compose down` se eliminaron los contenedores (web y db) y la red, pero no el volumen `db_data`. Al volver a levantar con `docker compose up -d` y consultar `SELECT * FROM ranking;`, los datos seguían ahí, incluida la fila de la moneda. Esto ocurre porque los datos de MariaDB se guardan en un volumen con nombre, que vive fuera del contenedor y sobrevive a su eliminación.
-
-**Prueba B: `docker compose down -v` y `docker compose up -d`**
-Con la opción `-v` se elimina también el volumen `db_data`. Al volver a levantar, MariaDB arrancó con el directorio de datos vacío, por lo que volvió a ejecutar `init.sql` y recreó la base de datos desde cero, con los datos iniciales. Cualquier dato que hubiera añadido después se habría perdido.
-
-**Diferencia y por qué:**
-`down` conserva los datos porque mantiene el volumen; `down -v` los borra porque elimina el volumen. `init.sql` solo se ejecuta cuando el volumen está vacío, es decir, la primera vez o después de un `down -v`.
-
-🪙 **Moneda 1:** `ARC-7X3K`
-
-## 5. Nivel 2 — PHP
-
-**¿Qué se ejecuta en el servidor y qué en el cliente?**
-(...)
-
-**¿Por qué las dos horas pueden no coincidir?**
-(...)
-
-🪙 **Moneda 2:** `ARC-Q9M2`
-
-## 6. Nivel 3 — Seguridad
-
-### Sin credenciales en el repositorio
-```
-
-### Puerto 3306 no publicado
-```
-```bash
-docker compose ps
-```
-```
-NAME                     IMAGE                  COMMAND                  SERVICE   CREATED         STATUS                   PORTS
-salon-recreativo-db-1    mariadb:11.4           "docker-entrypoint.s…"   db        8 minutes ago   Up 8 minutes (healthy)   3306/tcp
-salon-recreativo-web-1   salon-recreativo-web   "docker-php-entrypoi…"   web       8 minutes ago   Up 8 minutes             0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
-```
-El servicio db solo muestra `3306/tcp` (puerto interno de la red Docker), sin la forma `0.0.0.0:3306->3306`, por lo que no está publicado en el host. Solo web publica el 8080.
-
-### Apache y PHP no revelan versión
-```bash
-curl -I http://localhost:8080
-```
-```
-HTTP/1.1 200 OK
-Date: Wed, 30 Sep 2026 17:48:31 GMT
-Server: Apache
-Content-Type: text/html; charset=UTF-8
-```
-La cabecera `Server` muestra solo `Apache`, sin número de versión (gracias a `ServerTokens Prod` y `ServerSignature Off`), y no aparece `X-Powered-By` (gracias a `expose_php = Off`). Ambas directivas se configuran en el Dockerfile.
-
-En el docker-compose.yml el servicio web recibe `DB_USER: ${MARIADB_USER}` (que vale `jugador`) y `DB_PASS: ${MARIADB_PASSWORD}`. Nunca se le pasa la contraseña de root ni se usa `env_file: .env` en web.
-```
-
-
-### La aplicación usa jugador, no root
-(...)
-
-### Apache y PHP no revelan versión
-
-```
-(salida de curl -I http://localhost:8080)
-
-```
-
-🪙 **Moneda 3:** `(la da Ana en directo)`
-
-
-## 7. Problemas que me encontré y cómo los resolví
-
-
-1. **Problema:** (...)
-   **Solución:** (...)
-
-## 8. Monedas
-
-
-| Nivel | Moneda |
-|---|---|
-| 1 | ARC-7X3K |
-
-| 2 | ARC-Q9M2 |
-| 3 | (...) |
+- **Personalización ([docs/personalizacion.md](docs/personalizacion.md)):**
+  - Idioma `es_ES`, zona horaria `Europe/Madrid`, enlaces permanentes `/%postname%/` y moderación de comentarios activada.
+  - Tema **Astra** (`4.14.3`) y plugin **Contact Form 7** (`6.0.6`) integrados mediante `wordpress:cli-php8.3`.
+  - Portada estática en `Inicio`, páginas `Sobre el proyecto`, `Tecnologías` (hija) y `Contacto`, menú `Menu Principal` anidado, categorías `Novedades` y `Tutoriales` con 3 entradas.
+  - Límites de subida de `64M` configurados en `config/uploads.ini` y `client_max_body_size 64M;` en `nginx/default.conf`.
+- **Seguridad ([docs/seguridad.md](docs/seguridad.md)):**
+  - `server_tokens off;`, `X-Content-Type-Options: nosniff` y `X-Frame-Options: SAMEORIGIN` en Nginx.
+  - Bloqueo `deny all;` (HTTP `403 Forbidden`) en `/xmlrpc.php`, `/wp-config.php` y ejecución PHP en `^/wp-content/uploads/.*\.php$`.
+  - `DISALLOW_FILE_EDIT` activado en `WORDPRESS_CONFIG_EXTRA`.
+  - Usuario dedicado con rol Editor (`editor_arcade`), plugin `limit-login-attempts-reloaded` (`3.4.7`) activo y `.env` excluido de Git mediante `.gitignore`.
+- **Pruebas y rendimiento ([docs/pruebas.md](docs/pruebas.md)):**
+  - Persistencia verificada tras `docker compose down` + `up -d`, respuestas HTTP `200` en ~`72–151 ms` tras calentamiento y consumo total inferior a `185 MiB` de RAM entre los tres contenedores.
